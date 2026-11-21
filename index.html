@@ -87,7 +87,7 @@ button {border:0;border-radius:13px;min-height:49px;cursor:pointer;font:800 13px
 const $ = id => document.getElementById(id);
 const ids=['deposit','fee','actual','announced'];
 const fmt = n => new Intl.NumberFormat('fa-IR',{maximumFractionDigits:0}).format(n);
-const usdFmt = n => new Intl.NumberFormat('fa-IR',{minimumFractionDigits:6,maximumFractionDigits:6}).format(n);
+const usdFmt = n => new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).format(n);
 const normalize = x => String(x ?? '').trim().replace(/[\u06f0-\u06f9]/g, ch=>String(ch.charCodeAt(0)-0x06f0)).replace(/[\u0660-\u0669]/g,ch=>String(ch.charCodeAt(0)-0x0660)).replace(/[\u066c\u060c\s,_]/g,'').replace(/[\u066b]/g,'.');
 const parseNum = id => {const txt=normalize($(id).value); if(!txt || !/^\d+(\.\d+)?$/.test(txt)) return NaN;return Number(txt)};
 const receipts={broker:{url:null,blob:null},owner:{url:null,blob:null}};
@@ -104,7 +104,7 @@ function calc(){
  if(f<0 || f>=100)return fail('درصد کارمزد باید از صفر تا کمتر از ۱۰۰ باشد.');
  if(a<=0 || r<=0)return fail('نرخ خرید دلار باید بیشتر از صفر باشد.');
  if(r<a)return fail('نرخ اعلامی به صاحب سرمایه نمی‌تواند از نرخ واقعی صراف کمتر باشد.');
- const fee=Math.round(d*f/100),net=d-fee,usd=net/r,spent=Math.round(usd*a),spread=net-spent,total=fee+spread;
+ const fee=Math.round(d*f/100),net=d-fee,usd=Math.floor(net*100/r)/100,usedBudget=Math.round(usd*r),spent=Math.round(usd*a),spread=usedBudget-spent,total=fee+spread;
  if(!Number.isFinite(usd) || net<=0)return fail('اطلاعات برای محاسبه معتبر نیست.');
  const data={deposit:d,feePct:f,actual:a,announced:r,fee,net,usd,spent,spread,total};currentData=data;
  $('results').hidden=false;$('receiptsSection').hidden=false;
