@@ -209,7 +209,7 @@ function drawReceipt(d,kind,stamp){
   text(g,broker?'دستور خرید دلار ـ صراف':'رسید خرید دلار ـ صاحب سرمایه',w/2,129,'bold 55px '+receiptFontFamily,'#ffffff','center');
   rounded(g,62,190,1156,78,20);g.fillStyle='#eaf3fe';g.fill();
   g.beginPath();g.moveTo(divider,208);g.lineTo(divider,251);g.lineWidth=2;g.strokeStyle='#7caad4';g.stroke();
-  text(g,'تاریخ: '+stamp.date,1176,242,'bold 39px '+receiptFontFamily,'#173c69','right',490);
+  text(g,'تاریخ: '+stamp.date,(divider+right)/2,242,'bold 39px '+receiptFontFamily,'#173c69','center',490);
   text(g,'ساعت: '+stamp.time,350,242,'bold 39px '+receiptFontFamily,'#173c69','center',480);
   const font=sz=>`bold ${sz}px ${receiptFontFamily}`;
   function drawValue(value,cx,baseY,width,color){

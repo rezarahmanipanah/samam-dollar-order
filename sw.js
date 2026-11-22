@@ -1,6 +1,6 @@
-const CACHE = 'samam-dollar-order-v13';
+const CACHE = 'samam-dollar-order-v14';
 const FONT_URL = 'https://cdn.jsdelivr.net/gh/artbijan/Web-Font@main/BNazaninBold.woff2';
-const FILES = ['./', './index.html', './samam-v11.html', './samam-v12.html', './samam-v13.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
+const FILES = ['./', './index.html', './samam-v11.html', './samam-v12.html', './samam-v13.html', './samam-v14.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', event=>{
   event.waitUntil(caches.open(CACHE).then(async c=>{
     await c.addAll(FILES);
