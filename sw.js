@@ -1,5 +1,5 @@
-const CACHE = 'samam-dollar-order-v10';
-const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE = 'samam-dollar-order-v11';
+const FILES = ['./', './index.html', './samam-v11.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', event=>{
   event.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));
 });
@@ -10,7 +10,7 @@ self.addEventListener('fetch', event=>{
   const url=new URL(event.request.url);
   if(url.origin!==self.location.origin || event.request.method!=='GET')return;
   // Prefer the published latest page when online; use the cached copy offline.
-  event.respondWith(fetch(event.request).then(response=>{
+  event.respondWith(fetch(event.request, {cache: event.request.mode==='navigate' ? 'no-store' : 'no-cache'}).then(response=>{
     if(response.ok){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(c=>c.put(event.request,copy)));}
     return response;
   }).catch(()=>caches.match(event.request,{ignoreSearch:true})));

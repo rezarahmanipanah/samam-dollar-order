@@ -254,7 +254,7 @@ ids.forEach(id=>{
  });
 });
 calc();
-if('serviceWorker' in navigator && window.isSecureContext) {window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
+if('serviceWorker' in navigator && window.isSecureContext) {window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>reg.update().catch(()=>{})).catch(()=>{}));}
 })();
 </script>
 </body>
