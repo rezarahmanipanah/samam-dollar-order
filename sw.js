@@ -1,4 +1,4 @@
-const CACHE = 'samam-dollar-order-v7';
+const CACHE = 'samam-dollar-order-v9';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', event=>{
   event.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));
