@@ -116,19 +116,18 @@ function rounded(ctx,x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
 function text(ctx,txt,x,y,font,color,align='right',maxW=undefined){ctx.fillStyle=color;ctx.font=font;ctx.textAlign=align;ctx.direction='rtl';ctx.fillText(txt,x,y,maxW);}
 function drawReceipt(d,kind){
   const broker=kind==='broker';
-  // Preserve both receipts' exact fields and financial values; change only the PNG layout.
+  // Keep the existing values and calculations; customize the labels and displayed rows only.
   const entries=broker?[
    ['مبلغ واریزی به حساب صراف',fmt(d.deposit)+' تومان'],
-   ['نرخ توافق‌شده با صراف',fmt(d.actual)+' تومان'],
-   ['مبلغ واقعی مصرف‌شده برای خرید دلار',fmt(d.spent)+' تومان'],
+   ['نرخ مورد توافق',fmt(d.actual)+' تومان'],
+   ['مبلغ خرید دلار',fmt(d.spent)+' تومان'],
    ['مقدار دلار خریداری‌شده',usdFmt(d.usd)+' دلار'],
-   ['کارمزد مجموعه',fmt(d.fee)+' تومان'],
    ['طلب ریالی مجموعه از صراف',fmt(d.total)+' تومان']
   ]:[
    ['مبلغ واریزی صاحب سرمایه',fmt(d.deposit)+' تومان'],
    ['کارمزد کسرشده',fmt(d.fee)+' تومان'],
-   ['وجه خالص اختصاص‌یافته به خرید دلار',fmt(d.net)+' تومان'],
-   ['نرخ اعلامی دلار به صاحب سرمایه',fmt(d.announced)+' تومان'],
+   ['مبلغ خرید دلار',fmt(d.net)+' تومان'],
+   ['نرخ دلار',fmt(d.announced)+' تومان'],
    ['طلب دلاری صاحب سرمایه',usdFmt(d.usd)+' دلار']
   ];
   const w=1280, left=62, right=1218, divider=638;
