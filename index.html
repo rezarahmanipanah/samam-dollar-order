@@ -115,37 +115,68 @@ function calc(){
 function rounded(ctx,x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
 function text(ctx,txt,x,y,font,color,align='right',maxW=undefined){ctx.fillStyle=color;ctx.font=font;ctx.textAlign=align;ctx.direction='rtl';ctx.fillText(txt,x,y,maxW);}
 function drawReceipt(d,kind){
- const broker=kind==='broker';
- // Only the specifically requested rows are printed. There are no notes or instructions below the receipt.
- const entries=broker?[
-  ['مبلغ واریزی به حساب صراف',fmt(d.deposit)+' تومان'],
-  ['نرخ توافق‌شده با صراف',fmt(d.actual)+' تومان'],
-  ['مبلغ واقعی مصرف‌شده برای خرید دلار',fmt(d.spent)+' تومان'],
-  ['مقدار دلار خریداری‌شده',usdFmt(d.usd)+' دلار'],
-  ['کارمزد مجموعه',fmt(d.fee)+' تومان'],
-  ['طلب ریالی مجموعه از صراف',fmt(d.total)+' تومان']
- ]:[
-  ['مبلغ واریزی صاحب سرمایه',fmt(d.deposit)+' تومان'],
-  ['کارمزد کسرشده',fmt(d.fee)+' تومان'],
-  ['وجه خالص اختصاص‌یافته به خرید دلار',fmt(d.net)+' تومان'],
-  ['نرخ اعلامی دلار به صاحب سرمایه',fmt(d.announced)+' تومان'],
-  ['طلب دلاری صاحب سرمایه',usdFmt(d.usd)+' دلار']
- ];
- const w=960,rowH=104,gap=13,top=186,bottom=47,h=top+entries.length*(rowH+gap)+bottom;
- const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
- g.fillStyle='#eaf2fc';g.fillRect(0,0,w,h);
- g.shadowColor='rgba(17,49,86,.13)';g.shadowBlur=23;g.shadowOffsetY=9;rounded(g,28,24,904,h-48,34);g.fillStyle='#fff';g.fill();g.shadowColor='transparent';g.shadowBlur=0;g.shadowOffsetY=0;
- rounded(g,62,58,836,105,22);g.fillStyle='#102849';g.fill();
- text(g,broker?'دستور خرید دلار ـ صراف':'رسید خرید دلار ـ صاحب سرمایه',w/2,128,'bold 43px Tahoma,Arial,sans-serif','#fff','center');
- let y=top;
- for(let i=0;i<entries.length;i++){
-  const [label,value]=entries[i];const standout=i===entries.length-1;
-  rounded(g,62,y,836,rowH,17);g.fillStyle=standout?'#e1eefc':'#f2f7fd';g.fill();
-  text(g,label,870,y+33,'bold 22px Tahoma,Arial,sans-serif','#526b86');
-  text(g,value,870,y+76,'bold 37px Tahoma,Arial,sans-serif',standout?'#0d58ae':'#102849');
-  y+=rowH+gap;
- }
- return c.toDataURL('image/png');
+  const broker=kind==='broker';
+  // Preserve both receipts' exact fields and financial values; change only the PNG layout.
+  const entries=broker?[
+   ['مبلغ واریزی به حساب صراف',fmt(d.deposit)+' تومان'],
+   ['نرخ توافق‌شده با صراف',fmt(d.actual)+' تومان'],
+   ['مبلغ واقعی مصرف‌شده برای خرید دلار',fmt(d.spent)+' تومان'],
+   ['مقدار دلار خریداری‌شده',usdFmt(d.usd)+' دلار'],
+   ['کارمزد مجموعه',fmt(d.fee)+' تومان'],
+   ['طلب ریالی مجموعه از صراف',fmt(d.total)+' تومان']
+  ]:[
+   ['مبلغ واریزی صاحب سرمایه',fmt(d.deposit)+' تومان'],
+   ['کارمزد کسرشده',fmt(d.fee)+' تومان'],
+   ['وجه خالص اختصاص‌یافته به خرید دلار',fmt(d.net)+' تومان'],
+   ['نرخ اعلامی دلار به صاحب سرمایه',fmt(d.announced)+' تومان'],
+   ['طلب دلاری صاحب سرمایه',usdFmt(d.usd)+' دلار']
+  ];
+  const w=1280, left=62, right=1218, divider=638;
+  const top=207, rowH=140, gap=17, bottom=60;
+  const h=top+entries.length*rowH+(entries.length-1)*gap+bottom;
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const g=c.getContext('2d');
+  g.fillStyle='#edf4fc';g.fillRect(0,0,w,h);
+  g.shadowColor='rgba(15,42,83,.10)';g.shadowBlur=22;g.shadowOffsetY=8;
+  rounded(g,25,24,w-50,h-48,33);g.fillStyle='#ffffff';g.fill();
+  g.shadowColor='transparent';g.shadowBlur=0;g.shadowOffsetY=0;
+  rounded(g,62,54,1156,116,25);g.fillStyle='#102849';g.fill();
+  text(g,broker?'دستور خرید دلار ـ صراف':'رسید خرید دلار ـ صاحب سرمایه',w/2,127,'bold 45px Tahoma,Arial,sans-serif','#ffffff','center');
+  const font=sz=>`bold ${sz}px Tahoma,Arial,sans-serif`;
+  function drawValue(value,cx,baseY,width,color){
+    let size=43;
+    g.font=font(size);
+    while(g.measureText(value).width>width && size>27){size--;g.font=font(size);}
+    text(g,value,cx,baseY,font(size),color,'center',width);
+  }
+  function labelLines(label,maxWidth){
+    g.font=font(33);
+    const words=label.split(/\s+/),lines=[];let line='';
+    for(const word of words){
+      const candidate=line?`${line} ${word}`:word;
+      if(line && g.measureText(candidate).width>maxWidth){lines.push(line);line=word;}
+      else line=candidate;
+    }
+    if(line)lines.push(line);
+    return lines;
+  }
+  for(let i=0;i<entries.length;i++){
+    const [label,value]=entries[i],last=i===entries.length-1;
+    const y=top+i*(rowH+gap);
+    const gradient=g.createLinearGradient(left,y,right,y+rowH);
+    gradient.addColorStop(0,last?'#dcecff':'#f4f8ff');
+    gradient.addColorStop(1,last?'#eaf4ff':'#e9f3ff');
+    rounded(g,left,y,right-left,rowH,26);g.fillStyle=gradient;g.fill();
+    g.beginPath();g.moveTo(divider,y+26);g.lineTo(divider,y+rowH-26);
+    g.strokeStyle='#7dadd5';g.lineWidth=2.5;g.stroke();
+    const lines=labelLines(label,490);
+    const baselineStart= y + rowH/2 + (lines.length===1?12:(lines.length===2?-11:-25));
+    for(let n=0;n<lines.length;n++){
+      text(g,lines[n],right-25,baselineStart+n*38,font(33),'#122b4d','right',492);
+    }
+    drawValue(value,350,y+rowH/2+15,505,last?'#0753a4':'#102849');
+  }
+  return c.toDataURL('image/png');
 }
 function showReceipt(kind){
  active=kind;
