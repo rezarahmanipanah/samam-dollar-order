@@ -5,7 +5,7 @@
   "description": "محاسبه آفلاین و ساخت دو رسید مستقل برای صراف و صاحب سرمایه",
   "lang": "fa",
   "dir": "rtl",
-  "start_url": "./samam-v12.html",
+  "start_url": "./samam-v13.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#edf3fa",

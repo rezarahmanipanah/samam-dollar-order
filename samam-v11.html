@@ -12,6 +12,13 @@
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <title>دستور خرید دلار | سمام</title>
 <style>
+@font-face {
+  font-family: "SamamBNazanin";
+  src: url("https://cdn.jsdelivr.net/gh/artbijan/Web-Font@main/BNazaninBold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
 :root {font-family:-apple-system,BlinkMacSystemFont,'Tahoma','Arial',sans-serif;color:#102849;background:#edf3fa;--navy:#102849;--blue:#155fc5;--muted:#65768d;--line:#dce5f0;--light:#f4f8fd}
 * {box-sizing:border-box} body {margin:0;min-height:100vh;background:linear-gradient(155deg,#eaf2fc 0%,#f6f9fd 45%,#e5edf8 100%)}
 .wrap {max-width:560px;margin:auto;padding:18px 15px calc(24px + env(safe-area-inset-bottom))}
@@ -106,6 +113,14 @@ const usdFmt = n => new Intl.NumberFormat('fa-IR',{maximumFractionDigits:2}).for
 const normalize = x => String(x ?? '').trim().replace(/[\u06f0-\u06f9]/g, ch=>String(ch.charCodeAt(0)-0x06f0)).replace(/[\u0660-\u0669]/g,ch=>String(ch.charCodeAt(0)-0x0660)).replace(/[\u066c\u060c\s,_]/g,'').replace(/[\u066b]/g,'.');
 const parseNum = id => {const txt=normalize($(id).value); if(!txt || !/^\d+(\.\d+)?$/.test(txt)) return NaN;return Number(txt)};
 const receipts={broker:{url:null,blob:null},owner:{url:null,blob:null}};
+const receiptFontFamily='"SamamBNazanin","B Nazanin","BNazanin","Nazanin",Tahoma,Arial,sans-serif';
+let receiptFontReady=Promise.resolve(false);
+if(document.fonts&&document.fonts.load){
+ receiptFontReady=document.fonts.load('700 42px "SamamBNazanin"')
+  .then(loaded=>{if(loaded.length&&currentData)calc();return loaded.length>0;})
+  .catch(()=>false);
+}
+
 let active='broker',currentData=null;
 let stampManual=false,lastRenderedStamp=null;
 const jalaliFormatter=new Intl.DateTimeFormat('en-US-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit'});
@@ -191,20 +206,20 @@ function drawReceipt(d,kind,stamp){
   rounded(g,25,24,w-50,h-48,33);g.fillStyle='#ffffff';g.fill();
   g.shadowColor='transparent';g.shadowBlur=0;g.shadowOffsetY=0;
   rounded(g,62,54,1156,116,25);g.fillStyle='#102849';g.fill();
-  text(g,broker?'دستور خرید دلار ـ صراف':'رسید خرید دلار ـ صاحب سرمایه',w/2,127,'bold 45px Tahoma,Arial,sans-serif','#ffffff','center');
+  text(g,broker?'دستور خرید دلار ـ صراف':'رسید خرید دلار ـ صاحب سرمایه',w/2,129,'bold 55px '+receiptFontFamily,'#ffffff','center');
   rounded(g,62,190,1156,78,20);g.fillStyle='#eaf3fe';g.fill();
   g.beginPath();g.moveTo(divider,208);g.lineTo(divider,251);g.lineWidth=2;g.strokeStyle='#7caad4';g.stroke();
-  text(g,'تاریخ: '+stamp.date,1176,240,'bold 32px Tahoma,Arial,sans-serif','#173c69','right',490);
-  text(g,'ساعت: '+stamp.time,350,240,'bold 32px Tahoma,Arial,sans-serif','#173c69','center',480);
-  const font=sz=>`bold ${sz}px Tahoma,Arial,sans-serif`;
+  text(g,'تاریخ: '+stamp.date,1176,242,'bold 39px '+receiptFontFamily,'#173c69','right',490);
+  text(g,'ساعت: '+stamp.time,350,242,'bold 39px '+receiptFontFamily,'#173c69','center',480);
+  const font=sz=>`bold ${sz}px ${receiptFontFamily}`;
   function drawValue(value,cx,baseY,width,color){
-    let size=43;
+    let size=49;
     g.font=font(size);
-    while(g.measureText(value).width>width && size>27){size--;g.font=font(size);}
+    while(g.measureText(value).width>width && size>29){size--;g.font=font(size);}
     text(g,value,cx,baseY,font(size),color,'center',width);
   }
   function labelLines(label,maxWidth){
-    g.font=font(33);
+    g.font=font(38);
     const words=label.split(/\s+/),lines=[];let line='';
     for(const word of words){
       const candidate=line?`${line} ${word}`:word;
@@ -223,12 +238,12 @@ function drawReceipt(d,kind,stamp){
     rounded(g,left,y,right-left,rowH,26);g.fillStyle=gradient;g.fill();
     g.beginPath();g.moveTo(divider,y+26);g.lineTo(divider,y+rowH-26);
     g.strokeStyle='#7dadd5';g.lineWidth=2.5;g.stroke();
-    const lines=labelLines(label,490);
-    const baselineStart= y + rowH/2 + (lines.length===1?12:(lines.length===2?-11:-25));
+    const lines=labelLines(label,510);
+    const baselineStart= y + rowH/2 + (lines.length===1?14:(lines.length===2?-11:-28));
     for(let n=0;n<lines.length;n++){
-      text(g,lines[n],right-25,baselineStart+n*38,font(33),'#122b4d','right',492);
+      text(g,lines[n],(divider+right)/2,baselineStart+n*43,font(38),'#122b4d','center',516);
     }
-    drawValue(value,350,y+rowH/2+15,505,last?'#0753a4':'#102849');
+    drawValue(value,(left+divider)/2,y+rowH/2+16,505,last?'#0753a4':'#102849');
   }
   return c.toDataURL('image/png');
 }
