@@ -26,6 +26,12 @@ h1 {font-size:19px;margin:0 0 4px;font-weight:900}.sub {font-size:11px;color:var
 label {font-size:12px;font-weight:800;color:#344c6b}
 .input-box {display:flex;align-items:center;gap:6px;min-width:0;border:1.5px solid #dbe4f0;background:#f9fbfe;border-radius:13px;padding:0 10px;min-height:48px;transition:border .15s,box-shadow .15s}
 .input-box:focus-within {border-color:#3273d2;box-shadow:0 0 0 3px #3175d215}
+.receipt-date-panel{margin:15px 0 0;padding:14px 13px;border:1px solid #dce8f7;border-radius:15px;background:#f3f8ff}
+.receipt-date-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:11px}
+.receipt-date-head strong{font-size:13px;color:#1a426e}.receipt-date-status{font-size:11px;color:#44749e}
+.receipt-date-grid{margin:0;gap:10px}.receipt-date-grid input{text-align:center;direction:ltr;font-size:15px}
+.receipt-date-reset{margin-top:10px;min-height:36px;border-radius:10px;background:#e3effe;color:#185caa;padding:6px 13px;font-size:11px;width:100%}
+.receipt-date-help{margin-top:8px;font-size:10px;color:#697f99;line-height:1.7}
 #deposit {text-align:right;direction:ltr}
 input {min-width:0;width:100%;border:0;outline:0;background:transparent;color:#132b4a;font:800 16px -apple-system,'Tahoma','Arial',sans-serif;text-align:left;direction:ltr;font-variant-numeric:tabular-nums;padding:10px 0}
 .unit {color:#8a99a9;white-space:nowrap;font-size:11px;font-weight:600}.hint {font-size:11px;color:#72839a;margin:10px 2px 0;line-height:1.8}
@@ -55,6 +61,15 @@ button {border:0;border-radius:13px;min-height:49px;cursor:pointer;font:800 13px
       <div class="field"><label for="fee">کارمزد</label><div class="input-box"><input id="fee" type="text" inputmode="decimal" autocomplete="off" aria-label="درصد کارمزد"><span class="unit" aria-hidden="true">٪</span></div></div>
       <div class="field"><label for="actual">نرخ توافقی با صراف</label><div class="input-box"><input id="actual" type="text" inputmode="decimal" autocomplete="off" aria-label="نرخ واقعی دلار به تومان"><span class="unit">تومان</span></div></div>
       <div class="field wide"><label for="announced">نرخ اعلامی به صاحب سرمایه <span style="color:#698098;font-weight:500">(فقط برای محاسبه)</span></label><div class="input-box"><input id="announced" type="text" inputmode="decimal" autocomplete="off" aria-label="نرخ اعلامی دلار به تومان"><span class="unit">تومان</span></div></div>
+    </div>
+    <div class="receipt-date-panel" aria-label="تاریخ و ساعت رسید">
+      <div class="receipt-date-head"><strong>تاریخ و ساعت رسید</strong><span id="stampMode" class="receipt-date-status">خودکار از گوشی</span></div>
+      <div class="form-grid receipt-date-grid">
+        <div class="field"><label for="receiptDate">تاریخ شمسی</label><div class="input-box"><input id="receiptDate" type="text" inputmode="text" autocomplete="off" dir="ltr" aria-label="تاریخ شمسی رسید"></div></div>
+        <div class="field"><label for="receiptTime">ساعت (۲۴ ساعته)</label><div class="input-box"><input id="receiptTime" type="text" inputmode="text" autocomplete="off" dir="ltr" aria-label="ساعت رسید"></div></div>
+      </div>
+      <button id="resetReceiptTime" class="receipt-date-reset" type="button">↻ استفاده از تاریخ و ساعت گوشی</button>
+      <div class="receipt-date-help">در حالت خودکار، زمان هنگام ذخیره یا ارسال رسید به‌روز می‌شود؛ برای تغییر، تاریخ یا ساعت را ویرایش کنید.</div>
     </div>
     <div class="hint">نرخ اعلامی به صاحب سرمایه باید برابر یا بیشتر از نرخ واقعی صراف باشد.</div>
     <div id="error" class="error" role="alert"></div>
@@ -92,7 +107,42 @@ const normalize = x => String(x ?? '').trim().replace(/[\u06f0-\u06f9]/g, ch=>St
 const parseNum = id => {const txt=normalize($(id).value); if(!txt || !/^\d+(\.\d+)?$/.test(txt)) return NaN;return Number(txt)};
 const receipts={broker:{url:null,blob:null},owner:{url:null,blob:null}};
 let active='broker',currentData=null;
-function clearReceipts(){currentData=null;for(const key of Object.keys(receipts)){receipts[key].url=null;receipts[key].blob=null;} $('preview').removeAttribute('src');$('share').disabled=$('save').disabled=true;}
+let stampManual=false,lastRenderedStamp=null;
+const jalaliFormatter=new Intl.DateTimeFormat('en-US-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit'});
+function deviceReceiptStamp(){
+ const now=new Date(),p=jalaliFormatter.formatToParts(now);
+ const num=name=>Number(p.find(x=>x.type===name).value),pad=n=>String(n).padStart(2,'0');
+ return {date:toPersianDigits(num('year')+'/'+pad(num('month'))+'/'+pad(num('day'))),
+         time:toPersianDigits(pad(now.getHours())+':'+pad(now.getMinutes()))};
+}
+function syncDeviceReceiptStamp(){
+ if(stampManual)return;
+ const stamp=deviceReceiptStamp();
+ $('receiptDate').value=stamp.date;
+ $('receiptTime').value=stamp.time;
+ $('stampMode').textContent='خودکار از گوشی';
+}
+function getReceiptStamp(){
+ syncDeviceReceiptStamp();
+ const date=toAsciiDigits($('receiptDate').value).replace(/[-.]/g,'/').replace(/\s/g,'');
+ const time=toAsciiDigits($('receiptTime').value).replace(/\s/g,'');
+ const d=/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/.exec(date),t=/^(\d{1,2}):(\d{1,2})$/.exec(time);
+ if(!d||!t)return null;
+ const yr=+d[1],mo=+d[2],dy=+d[3],hr=+t[1],mi=+t[2];
+ const max=mo>=1&&mo<=6?31:mo>=7&&mo<=11?30:mo===12?30:0;
+ if(yr<1200||yr>1600||dy<1||dy>max||hr>23||mi>59)return null;
+ const pad=n=>String(n).padStart(2,'0');
+ return {date:toPersianDigits(yr+'/'+pad(mo)+'/'+pad(dy)),time:toPersianDigits(pad(hr)+':'+pad(mi))};
+}
+function refreshAutoReceipts(){
+ if(!currentData||stampManual)return;
+ const stamp=getReceiptStamp();
+ if(!stamp||(lastRenderedStamp&&stamp.date===lastRenderedStamp.date&&stamp.time===lastRenderedStamp.time))return;
+ for(const kind of ['broker','owner']){receipts[kind].url=drawReceipt(currentData,kind,stamp);receipts[kind].blob=null;}
+ lastRenderedStamp=stamp;showReceipt(active);
+}
+
+function clearReceipts(){currentData=null;lastRenderedStamp=null;for(const key of Object.keys(receipts)){receipts[key].url=null;receipts[key].blob=null;} $('preview').removeAttribute('src');$('share').disabled=$('save').disabled=true;}
 function calc(){
  const d=parseNum('deposit'),f=parseNum('fee'),a=parseNum('actual'),r=parseNum('announced');
  const error=$('error');error.classList.remove('show');error.textContent='';
@@ -106,15 +156,16 @@ function calc(){
  if(r<a)return fail('نرخ اعلامی به صاحب سرمایه نمی‌تواند از نرخ واقعی صراف کمتر باشد.');
  const fee=Math.round(d*f/100),net=d-fee,usd=Math.floor(net*100/r)/100,usedBudget=Math.round(usd*r),spent=Math.round(usd*a),spread=usedBudget-spent,total=fee+spread;
  if(!Number.isFinite(usd) || net<=0)return fail('اطلاعات برای محاسبه معتبر نیست.');
- const data={deposit:d,feePct:f,actual:a,announced:r,fee,net,usd,spent,spread,total};currentData=data;
+ const stamp=getReceiptStamp();if(!stamp)return fail('تاریخ شمسی یا ساعت معتبر نیست؛ مثال: ۱۴۰۵/۰۹/۰۱ و ۱۴:۳۰.');
+ const data={deposit:d,feePct:f,actual:a,announced:r,fee,net,usd,spent,spread,total};currentData=data;lastRenderedStamp=stamp;
  $('results').hidden=false;$('receiptsSection').hidden=false;
  $('outFee').textContent=fmt(fee)+' تومان';$('outNet').textContent=fmt(net)+' تومان';$('outUsd').textContent=usdFmt(usd)+' دلار';$('outSpent').textContent=fmt(spent)+' تومان';$('outSpread').textContent=fmt(spread)+' تومان';$('outTotal').textContent=fmt(total)+' تومان';
- for(const kind of ['broker','owner']){receipts[kind].url=drawReceipt(data,kind);receipts[kind].blob=null;}
+ for(const kind of ['broker','owner']){receipts[kind].url=drawReceipt(data,kind,stamp);receipts[kind].blob=null;}
  $('share').disabled=$('save').disabled=false;showReceipt(active);
 }
 function rounded(ctx,x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
 function text(ctx,txt,x,y,font,color,align='right',maxW=undefined){ctx.fillStyle=color;ctx.font=font;ctx.textAlign=align;ctx.direction='rtl';ctx.fillText(txt,x,y,maxW);}
-function drawReceipt(d,kind){
+function drawReceipt(d,kind,stamp){
   const broker=kind==='broker';
   // Keep the existing values and calculations; customize the labels and displayed rows only.
   const entries=broker?[
@@ -131,7 +182,7 @@ function drawReceipt(d,kind){
    ['طلب دلاری صاحب سرمایه',usdFmt(d.usd)+' دلار']
   ];
   const w=1280, left=62, right=1218, divider=638;
-  const top=207, rowH=140, gap=17, bottom=60;
+  const top=298, rowH=140, gap=17, bottom=60;
   const h=top+entries.length*rowH+(entries.length-1)*gap+bottom;
   const c=document.createElement('canvas');c.width=w;c.height=h;
   const g=c.getContext('2d');
@@ -141,6 +192,10 @@ function drawReceipt(d,kind){
   g.shadowColor='transparent';g.shadowBlur=0;g.shadowOffsetY=0;
   rounded(g,62,54,1156,116,25);g.fillStyle='#102849';g.fill();
   text(g,broker?'دستور خرید دلار ـ صراف':'رسید خرید دلار ـ صاحب سرمایه',w/2,127,'bold 45px Tahoma,Arial,sans-serif','#ffffff','center');
+  rounded(g,62,190,1156,78,20);g.fillStyle='#eaf3fe';g.fill();
+  g.beginPath();g.moveTo(divider,208);g.lineTo(divider,251);g.lineWidth=2;g.strokeStyle='#7caad4';g.stroke();
+  text(g,'تاریخ: '+stamp.date,1176,240,'bold 32px Tahoma,Arial,sans-serif','#173c69','right',490);
+  text(g,'ساعت: '+stamp.time,350,240,'bold 32px Tahoma,Arial,sans-serif','#173c69','center',480);
   const font=sz=>`bold ${sz}px Tahoma,Arial,sans-serif`;
   function drawValue(value,cx,baseY,width,color){
     let size=43;
@@ -190,9 +245,10 @@ function showReceipt(kind){
 const fileName=kind=>kind==='broker'?'samam-broker-receipt.png':'samam-investor-receipt.png';
 function asBlob(dataURL){const [head,base64]=dataURL.split(',');const data=atob(base64),arr=new Uint8Array(data.length);for(let i=0;i<data.length;i++)arr[i]=data.charCodeAt(i);return new Blob([arr],{type:'image/png'});}
 async function getFile(kind){const r=receipts[kind];const blob=r.blob||asBlob(r.url);r.blob=blob;return new File([blob],fileName(kind),{type:'image/png'});}
-async function save(kind=active){if(!currentData)return;const a=document.createElement('a');a.href=receipts[kind].url;a.download=fileName(kind);document.body.append(a);a.click();a.remove();}
+async function save(kind=active){if(!currentData)return;refreshAutoReceipts();const a=document.createElement('a');a.href=receipts[kind].url;a.download=fileName(kind);document.body.append(a);a.click();a.remove();}
 $('share').addEventListener('click',async()=>{
  if(!currentData)return;
+ refreshAutoReceipts();
  const kind=active;
  try{
   const file=await getFile(kind);
@@ -202,8 +258,8 @@ $('share').addEventListener('click',async()=>{
  }catch(e){if(e.name!=='AbortError')alert('اشتراک مستقیم در این مرورگر ممکن نیست. از «ذخیره تصویر» استفاده کنید.');}
 });
 $('save').addEventListener('click',()=>save(active));
-$('tabBroker').addEventListener('click',()=>showReceipt('broker'));
-$('tabOwner').addEventListener('click',()=>showReceipt('owner'));
+$('tabBroker').addEventListener('click',()=>{refreshAutoReceipts();showReceipt('broker');});
+$('tabOwner').addEventListener('click',()=>{refreshAutoReceipts();showReceipt('owner');});
 // Show all financial inputs with Persian digits. Money/rates have grouping,
 // and fee may include a Persian decimal separator for fractional percentages.
 // Maintain the caret position even when grouping changes during typing.
@@ -252,6 +308,18 @@ ids.forEach(id=>{
   formatFinancialInput(id);
   clearTimeout(debounce);debounce=setTimeout(calc,120);
  });
+});
+syncDeviceReceiptStamp();
+['receiptDate','receiptTime'].forEach(id=>$(id).addEventListener('input',()=>{
+ stampManual=true;
+ $('stampMode').textContent='زمان انتخابی شما';
+ calc();
+}));
+$('resetReceiptTime').addEventListener('click',()=>{
+ stampManual=false;syncDeviceReceiptStamp();calc();
+});
+document.addEventListener('visibilitychange',()=>{
+ if(!document.hidden){if(currentData)refreshAutoReceipts();else syncDeviceReceiptStamp();}
 });
 calc();
 if('serviceWorker' in navigator && window.isSecureContext) {window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>reg.update().catch(()=>{})).catch(()=>{}));}
